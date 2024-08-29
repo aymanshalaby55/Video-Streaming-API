@@ -20,6 +20,7 @@ model User {
   password  String
   role      Role     @default(USER)
   createdAt DateTime @default(now())
+  videos    Video[]
 }
 
 // roles for the user
@@ -29,20 +30,22 @@ enum Role {
 }
 
 model Video {
-  id          String   @id @default(uuid())
-  videoPath   String
+  id           String   @id @default(uuid())
+  videoPath    String
   originalName String
-  title       String   @default("")
-  description String?
-  thumbnail   String
-  duration    Int?
-  isPublic    Boolean  @default(true)
-  views       Int      @default(0)
-  fileSize    Int
-  // user relation
+  title        String   @default("")
+  description  String?
+  thumbnail    String
+  duration     Int?
+  isPublic     Boolean  @default(true)
+  views        Int      @default(0)
+  fileSize     Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   // reivews relation
   // tags relation
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
 
+  // user relation
+  User         User     @relation(fields: [userId], references: [id])
+  userId       String
+}

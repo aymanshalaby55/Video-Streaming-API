@@ -1,12 +1,13 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../Config/PrismaClient');
-const { promisify } = require('util');
+const catchAsync = require('express-async-handler');
+const AppError = require('../utils/appError');
 
-
-const Protect = async (req, res, next) => {
+const Protect = catchAsync(async (req, res, next) => {
     const authorization = req.headers.authorization;
 
-    // get token fron requset
+    // get token from request or cookie
+    let token;
     if (authorization && authorization.startsWith("Bearer")) {
         token = authorization.split(" ")[1];
     }
@@ -14,25 +15,19 @@ const Protect = async (req, res, next) => {
         token = req.cookies.token;
     }
 
+    // handle not found token
     if (!token) {
-        return res.status(401).json({ message: "You are not authorized to access this resource" });
+        return next(new AppError("You are not authorized to access this resource", 401));
     }
 
-    // console.log(token)
-    // verify token.
-    try {
-        console.log(process.env.JWT_SECRET)
-        const decoded =  jwt.verify(token, process.env.JWT_SECRET);
-        // console.log(decoded);
-        const user = await prisma.user.findUnique({ where: { id: decoded.payload.id } });
-        console.log(user);
-        req.user = user;
-        next();
-    } catch (error) {
-        console.error(error);
-        res.status(403).json({ message: "Token is not valid" });
+    // verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({ where: { id: decoded.Userid } });
+    if (!user) {
+        return next(new AppError("User not found", 404))
     }
-
-}
+    req.user = user;
+    next();
+});
 
 module.exports = { Protect };

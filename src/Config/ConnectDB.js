@@ -2,6 +2,8 @@ const prisma = require('./PrismaClient');
 
 const connect_database = async () => {
     try {
+        // await prisma.user.deleteMany();
+        // await prisma.video.deleteMany();
         await prisma.$connect();
         console.log("Database connected successfully");
     } catch (error) {

@@ -12,7 +12,7 @@ function checkFileType(file, cb) {
   // Check mime type
   const mimetype = filetypes.test(file.mimetype); // search for it
 
-  console.log(extname);
+  // console.log(1);
 
   if (mimetype && extname) {
     return cb(null, true);

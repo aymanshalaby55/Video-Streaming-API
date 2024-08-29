@@ -1,143 +1,115 @@
 const prisma = require('../Config/PrismaClient');
-const upload = require('../Config/multerConfig');
+const { deleteVideoFrom } = require('../Services/Video/delete.service')
 const { videoSchema } = require('../validate/validateVideo');
 const fs = require('fs');
-const path = require('path')
+const path = require('path');
+const catchAsync = require('express-async-handler');
+const AppError = require('../utils/appError');
+const { createThumbnail } = require('../Services/Video/thumnail.Service');
 
-uploadVideo = async (req, res, next) => {
-    const user = req.user;
-    upload(req, res, async (err) => {
-        if (!req.file) {
-            return res.status(400).json({ message: "No video uploaded" });
-        }
+const uploadVideo = catchAsync(async (req, res, next) => {
+    if (!req.file) {
+        return next(new AppError("No file uploaded", 400));
+    }
 
-        const videoPath = path.join(__dirname, '..', 'Public', 'Videos', `${req.file.fieldname}-${Date.now()}${path.extname(req.file.originalname)}`);
-        console.log(req.file , videoPath)
+    const VideoName = `${req.file.fieldname}-${Date.now()}${path.extname(req.file.originalname)}`
+
+    const videoPath = path.join(__dirname, '..', 'Public', 'Videos', VideoName);
+
+    console.log(req.file, videoPath)
+
+    await prisma.$transaction(async (prisma) => {
+        let Frame;
         try {
-            fs.writeFileSync(videoPath, req.file.buffer);
-        } catch (error) {
-            fs.unlink(videoPath, (err) => {
-                if (err) {
-                    console.error("Failed to delete the file:", err);
+            await fs.writeFileSync(videoPath, req.file.buffer);
+
+            Frame = await createThumbnail(videoPath);
+
+            await prisma.user.update({
+                where: {
+                    id: user.id
+                },
+                data: {
+                    videos: {
+                        create: {
+                            ...req.body,
+                            videoPath: VideoName,
+                            thumbnail: Frame.savedFramePath,
+                            duration: Frame.videoDuration,
+                            originalName: req.file.originalname,
+                            fileSize: req.file.size,
+                            isPublic: true
+                        },
+                    }
                 }
             });
-            return res.status(500).json({ message: "Failed to save video to disk", error: error });
+        } catch (error) {
+            deleteVideoFrom(VideoName, Frame.savedFramePath);
+            return next(new AppError("Failed to save video to disk", 500));
         }
 
-        
-        const newVideo = await prisma.video.create({
-            data: {
-                ...req.body,
-                videoPath,
-                isPublic : Boolean(true),
-                fileSize: req.file.size,
-                originalName: req.file.originalname
-            },
-        });
-
-        res.send({
-            message: "File uploaded!",
-             newVideo,
-        });
     });
-};
 
-const getAllVideos = async (req, res) => {
-    try {
-        const videos = await prisma.video.findMany();
-        res.status(200).json({
-            status: 'success',
-            results: videos.length,
-            data: {
-                videos
-            }
-        });
-    } catch (err) {
-        res.status(400).json({
-            status: 'fail',
-            message: err.message
-        });
-    }
-};
+    res.json({
+        message: "File uploaded!",
+        Video: req.file.originalname,
+    });
+});
+
+const getAllVideos = catchAsync(async (req, res, next) => {
+    const videos = await prisma.video.findMany({
+        where: {
+            isPublic: true
+        }
+    });
+    res.status(200).json({
+        status: 'success',
+        results: videos.length,
+        data: {
+            videos
+        }
+    });
+});
 
 // Get video by ID
-const getVideoById = async (req, res) => {
-    try {
+const getVideoById = catchAsync(async (req, res, next) => {
+    const video = await prisma.$transaction(async (prisma) => {
         const video = await prisma.video.findUnique({
             where: {
                 id: req.params.id
             }
         });
-        if (!video) {
-            return res.status(404).json({
-                status: 'fail',
-                message: 'Video not found'
-            });
-        }
-        res.status(200).json({
-            status: 'success',
-            data: {
-                video
-            }
-        });
-    } catch (err) {
-        res.status(400).json({
-            status: 'fail',
-            message: err.message
-        });
-    }
-};
 
-// Create a new video
-const createVideo = async (req, res) => {
-    try {
-        const newVideo = await prisma.video.create({
-            data: req.body
-        });
-        res.status(201).json({
-            status: 'success',
-            data: {
-                video: newVideo
-            }
-        });
-    } catch (err) {
-        res.status(400).json({
-            status: 'fail',
-            message: err.message
-        });
-    }
-};
+        if (!video) {
+            return next(new AppError("Video Not Found", 404))
+        }
+        streamVideo(video.path);
+    });
+});
 
 // Delete video by ID
-const deleteVideo = async (req, res) => {
-    try {
-        const video = await prisma.video.delete({
+const deleteVideo = catchAsync(async (req, res, next) => {
+    // Delete the video with the id
+    await prisma.$transaction(async (prisma) => {
+        const deletedVideo = await prisma.video.delete({
             where: {
                 id: req.params.id
             }
         });
-        if (!video) {
-            return res.status(404).json({
-                status: 'fail',
-                message: 'Video not found'
-            });
-        }
-        res.status(204).json({
-            status: 'success',
-            data: null
-        });
-    } catch (err) {
-        res.status(400).json({
-            status: 'fail',
-            message: err.message
-        });
-    }
-};
+
+        // delete Video and frame From public
+        deleteVideoFrom(deletedVideo.videoPath, deletedVideo.savedFramePath, next);
+    });
+
+    // Send response
+    res.status(204).json({
+        status: 'success',
+    });
+});
 
 module.exports = {
     getAllVideos,
     getVideoById,
-    createVideo,
     deleteVideo,
     uploadVideo
 };

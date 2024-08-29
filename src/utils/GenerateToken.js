@@ -1,16 +1,16 @@
 const jwt = require('jsonwebtoken');
 const CatchAsync = require('express-async-handler');
 
-const GenerateToken = CatchAsync(async (payload, res) => {
+const GenerateToken = CatchAsync(async (Userid, res) => {
 
-    console.log(payload)
-    const token = jwt.sign({ payload }, process.env.JWT_SECRET, {
+    console.log(Userid)
+    const token = jwt.sign({ Userid }, process.env.JWT_SECRET, {
         expiresIn: '15m',
     });
 
     const cookieOptions = {
         expires: new Date(
-            Date.now() +  24 * 60 * 60 * 1000 // convert it to milleseconds
+            Date.now() + 24 * 60 * 60 * 1000 // convert it to milleseconds
         ),
         httpOnly: true // can't manipluate cookie in any way in the browser.
     };

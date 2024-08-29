@@ -9,7 +9,7 @@ router.post('/Login', Login);
 router.post('/SignUp', SignUp)
 
 
-router.get('/GetAllUser', Protect, getAllUsers);
+router.get('/GetAllUser', getAllUsers);
 router.get('/GetUser/:id', getUserById);
 router.post('/CreateUser', createUser);
 router.put('/UpdateUser/:id', updateUser);
