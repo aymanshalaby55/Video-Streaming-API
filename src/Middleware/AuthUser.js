@@ -30,4 +30,25 @@ const Protect = catchAsync(async (req, res, next) => {
     next();
 });
 
-module.exports = { Protect };
+
+const authorized = (...roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            next(
+                new AppErorr('You do not have the permission to do this action', 403)
+            );
+        }
+        next();
+    };
+};
+
+const verifyEmailMiddllware = (req, res, next) => {
+    if (req.user.emailVerified) {
+        next(
+            new AppErorr('You do not have the permission to do this action', 403)
+        );
+    }
+    next();
+};
+
+module.exports = { Protect, authorized, verifyEmailMiddllware };

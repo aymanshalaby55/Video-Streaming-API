@@ -1,6 +1,6 @@
 const speakeasy = require("speakeasy");
 
-class EmailOTPServices {
+class Otp {
     static generateSecret() {
         return speakeasy.generateSecret({ length: 20 }).base32;
     }
@@ -9,7 +9,8 @@ class EmailOTPServices {
         return speakeasy.totp({
             secret,
             encoding: "base32",
-            digits: 4,
+            digits: 6,
+            step: 600, // 10 minutes
         });
     }
 
@@ -18,10 +19,16 @@ class EmailOTPServices {
             secret,
             encoding: "base32",
             token: otp,
-            window: 4,
-            digits: 4,
+            window: 0, // No window to ensure OTP is valid for the entire 10 minutes
+            digits: 6,
+            step: 600, // 10 minutes
         });
     }
-}  
+}
 
-module.exports = EmailOTPServices;
+// const otp = EmailOTPServices.generateOTP();
+// console.log(otp)
+// console.log(EmailOTPServices.verifyOTP(otp , 123))
+
+
+module.exports = Otp;

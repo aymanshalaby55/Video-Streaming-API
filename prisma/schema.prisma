@@ -20,7 +20,13 @@ model User {
   password  String
   role      Role     @default(USER)
   createdAt DateTime @default(now())
-  videos    Video[]
+
+  // opt vars
+  emailVerified Boolean @default(false)
+  optSecret       String?
+
+  // relations
+  videos Video[]
 }
 
 // roles for the user
@@ -46,6 +52,6 @@ model Video {
   // tags relation
 
   // user relation
-  User         User     @relation(fields: [userId], references: [id])
-  userId       String
+  User   User   @relation(fields: [userId], references: [id])
+  userId String
 }

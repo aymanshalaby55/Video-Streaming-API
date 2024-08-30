@@ -3,7 +3,8 @@ const GlobalError = require('./Controllers/errorController');
 const appError = require('./utils/appError');
 
 const dotenv = require('dotenv');
-const cors = require('cors')
+const cors = require('cors');
+const AppError = require('./utils/appError');
 
 
 
@@ -28,7 +29,7 @@ app.listen(Port, () => {
 
 app.all("*", (req, res, next) => {
     // if next has argument express automaticly will skip all middlewares and go to our error handler middlerware
-    next(new AppErorr(`can't find ${req.originalUrl} on this server`, 404));
+    next(new AppError(`can't find ${req.originalUrl} on this server`, 404));
 });
 
 app.use(GlobalError);

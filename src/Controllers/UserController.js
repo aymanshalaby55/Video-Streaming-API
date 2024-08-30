@@ -39,8 +39,7 @@ const getUserById = catchAsync(async (req, res, next) => {
 
 // Create a new user
 const createUser = catchAsync(async (req, res, next) => {
-    await prisma.user.deleteMany();
-    const { username, email, password, role, isPremium } = req.body;
+    const { username, email, password, role } = req.body;
     const newUser = await prisma.user.create({
         data: {
             username,
