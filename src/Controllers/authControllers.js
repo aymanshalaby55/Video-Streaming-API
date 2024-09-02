@@ -113,7 +113,7 @@ const verifyEmail = catchAsync(async (req, res, next) => {
             }
         });
         const otp = OTP.generateOTP(newSecret);
-        const sendEmail = new Email(req.user, "http://localhost:3000/api/v1/users/verifyEmail")
+        const sendEmail = new Email(req.user, "http://localhost:3000/api/users/verifyEmail")
         sendEmail.sendOTP("Verify Email", otp);
         // Throw error
         return next(new AppError("Wrong OTP, OTP sent again", 400));

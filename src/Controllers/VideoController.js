@@ -16,7 +16,8 @@ const uploadVideo = catchAsync(async (req, res, next) => {
 
     const videoPath = path.join(__dirname, '..', 'Public', 'Videos', VideoName);
 
-    console.log(req.file, videoPath)
+    // console.log(req.file, videoPath)
+    console.log()
 
     await prisma.$transaction(async (prisma) => {
         let Frame;
@@ -27,7 +28,7 @@ const uploadVideo = catchAsync(async (req, res, next) => {
 
             await prisma.user.update({
                 where: {
-                    id: user.id
+                    id: req.user.id
                 },
                 data: {
                     videos: {
@@ -44,6 +45,7 @@ const uploadVideo = catchAsync(async (req, res, next) => {
                 }
             });
         } catch (error) {
+            console.log(error);
             deleteVideoFrom(VideoName, Frame.savedFramePath);
             return next(new AppError("Failed to save video to disk", 500));
         }
@@ -56,17 +58,87 @@ const uploadVideo = catchAsync(async (req, res, next) => {
     });
 });
 
-const getAllVideos = catchAsync(async (req, res, next) => {
-    const videos = await prisma.video.findMany({
+
+// stream video 
+const streamVideo = catchAsync(async (req, res, next) => {
+    const videoId = req.params.id; // Assuming videoId is passed as a URL parameter
+
+    const video = await prisma.video.findUnique({
         where: {
-            isPublic: true
+            id: videoId
         }
     });
+
+    // Increment view count
+    await prisma.video.update({
+        where: { id: videoId },
+        data: { views: { increment: 1 } } // Assuming 'views' is the field for view count
+    });
+
+    // read file 
+    const videoPath = path.join(__dirname, '..', 'Public', 'Videos', video.videoPath);
+    console.log(videoPath, video);
+    if (!fs.existsSync(videoPath) || !video) {
+        return next(new AppError("video not found", 404))
+    }
+
+    const videoStat = await fs.promises.stat(videoPath); // video information
+    // set headers
+    const fileSize = videoStat.size;
+    const range = req.headers.range;
+
+    const parts = range ? range.replace(/bytes=/, "").split("-") : [];
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    if (range && start >= fileSize) {
+        return next(new AppError("Ranges are not Valid", 400))
+    }
+
+    const chunksize = range ? end - start + 1 : fileSize;
+    const head = {
+        "Content-Range": range ? `bytes ${start}-${end}/${fileSize}` : undefined,
+        "Accept-Ranges": "bytes",
+        "Content-Length": chunksize,
+        "Content-Type": "video/mp4",
+    };
+
+    res.writeHead(range ? 206 : 200, head);
+    const file = fs.createReadStream(videoPath, range ? { start, end } : undefined);
+    file.pipe(res);
+})
+
+const getAllVideos = catchAsync(async (req, res, next) => {
+    const user = await prisma.video.findMany({
+        // where: { id: req.user.id },
+        select: { id: true, thumbnail: true, originalName: true, duration: true }
+    });
+
+    if (!user) {
+        return next(new AppError("User Not found", 404));
+    }
+
+    console.log(user);
+
+    const images = await Promise.all(
+        user.map(async (video) => {
+            const filePath = path.join(__dirname, '..', 'Public', 'Frames', video.thumbnail);
+            const fileData = await fs.promises.readFile(filePath);
+            const fileExt = path.extname(video.thumbnail).slice(1);
+            return {
+                id: video.id,
+                name: video.originalName,
+                duration: video.duration,
+                data: `data:image/${fileExt};base64,${fileData.toString('base64')}`,
+            };
+        })
+    );
+
+    console.log(images);
     res.status(200).json({
         status: 'success',
-        results: videos.length,
         data: {
-            videos
+            videos: images
         }
     });
 });
@@ -90,20 +162,19 @@ const getVideoById = catchAsync(async (req, res, next) => {
 // Delete video by ID
 const deleteVideo = catchAsync(async (req, res, next) => {
     // Delete the video with the id
-    await prisma.$transaction(async (prisma) => {
-        const deletedVideo = await prisma.video.delete({
-            where: {
-                id: req.params.id
-            }
-        });
-
-        // delete Video and frame From public
-        deleteVideoFrom(deletedVideo.videoPath, deletedVideo.savedFramePath, next);
+    const deletedVideo = await prisma.video.delete({
+        where: {
+            id: req.params.id
+        }
     });
 
+    console.log(deletedVideo);
+    
+    deleteVideoFrom(deletedVideo.videoPath, deletedVideo.thumbnail, next);
     // Send response
     res.status(204).json({
         status: 'success',
+        video : deleteVideo.originalName
     });
 });
 
@@ -111,5 +182,6 @@ module.exports = {
     getAllVideos,
     getVideoById,
     deleteVideo,
-    uploadVideo
+    uploadVideo,
+    streamVideo
 };

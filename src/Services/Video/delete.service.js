@@ -5,8 +5,11 @@ const AppError = require('../../utils/appError');
 
 const deleteVideoFrom = catchAsync(async (videoName, frameName, next) => {
     // const path = require('path').join(__dirname, 'videos', videoPath);
-    const video = path.join(__dirname, '../../Public/Videos', videoName);
-    const frame = path.join(__dirname, '../../Public/Frames', frameName);
+
+    const video = path.join(__dirname, '..', '..', 'Public', 'Videos', videoName);
+    const frame = path.join(__dirname, '..', '..', 'Public', 'Frames', frameName);
+
+    console.log(video, frame);
     // console.log(path)
     fs.unlink(video, (err) => {
         if (err) {
