@@ -6,6 +6,9 @@ const userRoutes = require('./Routs/UserRout');
 const videoRoutes = require('./Routs/VideoRout');
 const commentRoutes = require('./Routs/commentRout');
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./Config/api-document.json');
+
 // variables
 const app = express();
 
@@ -18,5 +21,8 @@ app.use(cookieParser())
 app.use('/api/users', userRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/comments' , commentRoutes)
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 
 module.exports = app;
