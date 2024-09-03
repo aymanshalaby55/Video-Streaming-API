@@ -43,7 +43,7 @@ const authorized = (...roles) => {
 };
 
 const verifyEmailMiddllware = (req, res, next) => {
-    if (req.user.emailVerified) {
+    if (!req.user.emailVerified) {
         next(
             new AppError('You do not have the permission to do this action', 403)
         );

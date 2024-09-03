@@ -14,11 +14,13 @@ router.post('/verifyEmail', verifyEmail)
 
 router.use(verifyEmailMiddllware);
 
-router.get('/GetAllUser', getAllUsers);
-router.get('/GetUser/:id', getUserById);
+router.get('/GetUser', getUserById);
 router.post('/CreateUser', createUser);
-router.put('/UpdateUser/:id', updateUser);
-router.delete('/DeleteUser/:id', deleteUser);
+router.put('/UpdateUser', updateUser);
+router.delete('/DeleteUser', deleteUser);
+
+router.use(authorized("ADMIN"));
+router.get('/GetAllUser', getAllUsers);
 
 module.exports = router;
 

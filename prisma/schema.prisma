@@ -74,4 +74,12 @@ model Comment {
   userId  String
   video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
   videoId String
+
+  // parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  // parentId String?
+  // replies  Comment[] @relation("CommentReplies")
+
+  @@index([userId])
+  @@index([videoId])
+  // @@index([parentId])
 }
