@@ -5,8 +5,8 @@ const { getAllUsers, getUserById, createUser, updateUser, deleteUser } = require
 const { Login, SignUp, verifyEmail } = require('../Controllers/authControllers')
 const { Protect, authorized, verifyEmailMiddllware } = require('../Middleware/AuthUser');
 // Define routes for user operations
-router.post('/Login', Login);
-router.post('/SignUp', SignUp)
+router.post('/login', Login);
+router.post('/signUp', SignUp)
 
 router.use(Protect);
 
@@ -14,13 +14,13 @@ router.post('/verifyEmail', verifyEmail)
 
 router.use(verifyEmailMiddllware);
 
-router.get('/GetUser', getUserById);
-router.post('/CreateUser', createUser);
-router.put('/UpdateUser', updateUser);
-router.delete('/DeleteUser', deleteUser);
+router.get('/getUser', getUserById);
+router.post('/createUser', createUser);
+router.put('/updateUser', updateUser);
+router.delete('/deleteUser', deleteUser);
 
 router.use(authorized("ADMIN"));
-router.get('/GetAllUser', getAllUsers);
+router.get('/getAllUser', getAllUsers);
 
 module.exports = router;
 

@@ -15,9 +15,11 @@ dotenv.config({ path: '.env' });
 // connect to DB
 const { connect_database } = require('./Config/ConnectDB')();
 
+
 app.use(cors({
     origin: ["*"]
 }));
+
 
 const Port = 3000;
 

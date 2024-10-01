@@ -12,7 +12,7 @@ const commentRouter = require('./commentRout.js');
 router.use(Protect);
 router.use(verifyEmailMiddllware);
 
-// comment routing.
+// merge comment routers.
 router.use('/:videoId/Comments', commentRouter)
 
 // Video routes

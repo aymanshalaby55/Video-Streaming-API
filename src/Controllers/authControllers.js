@@ -11,14 +11,14 @@ const Email = require('../utils/email');
 
 const Login = catchAsync(async (req, res, next) => {
     const { email, password } = req.body;
-    const { error } = loginSchema.validate({
-        email, password
-    })
+    // const { error } = loginSchema.validate({
+    //     email, password
+    // })
 
-    // required
-    if (error) {
-        return next(new AppErorr("Email and Password are required", 400));
-    }
+    // // required
+    // if (error) {
+    //     return next(new AppErorr("Email and Password are required", 400));
+    // }
     // find user
     const user = await prisma.user.findUnique({
         where: {
@@ -59,16 +59,19 @@ const SignUp = catchAsync(async (req, res) => {
             error
         })
     }
+
     const checkEmail = await prisma.user.findUnique({
         where: {
             email
         }
     });
+
     if (checkEmail) {
         return res.json({ status: "this Email already exist" });
     }
 
     const hashedPassword = await hashUser(password);
+
     const user = await prisma.user.create({
         data: {
             username,
@@ -76,17 +79,21 @@ const SignUp = catchAsync(async (req, res) => {
             password: hashedPassword
         }
     });
+
     const Userid = user.id;
 
     // send otp
     const secret = OTP.generateSecret();
+
     const otp = OTP.generateOTP(secret);
+
     const sendEmail = new Email(user, "http://localhost:3000/api/v1/users/verifyEmail")
+
     sendEmail.sendOTP("Verify Email", otp);
 
     const token = await GenerateToken(Userid, res);
 
-    res.json({ message: "user signed up successfuly", token: token });
+    res.json({ message: "user signed up successfuly", token });
 });
 
 
